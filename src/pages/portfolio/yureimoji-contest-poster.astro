@@ -1,0 +1,66 @@
+---
+const imagePath = `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}portfolio/yureimoji-contest/poster.png`;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>幽霊文字アイデアコンテスト ポスター</title>
+    <meta
+      name="description"
+      content="幽霊文字アイデアコンテストのポスター画像を単体で表示するページです。"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #e8e0d3;
+      }
+
+      main {
+        width: min(100vw, 1080px);
+        padding: 16px;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin: 0 auto;
+        box-shadow: 0 18px 40px rgba(34, 24, 18, 0.18);
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        main {
+          width: 100%;
+          padding: 0;
+        }
+
+        img {
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src={imagePath} alt="幽霊文字アイデアコンテストのポスター" />
+    </main>
+  </body>
+</html>
