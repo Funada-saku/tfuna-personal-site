@@ -4,6 +4,7 @@ import "../../styles/global.css";
 const pageTitle = "幽霊文字アイデアコンテスト";
 const withBase = (path) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}${path}`;
 const imagePath = withBase("portfolio/yureimoji-contest/poster.png");
+const posterPagePath = withBase("portfolio/yureimoji-contest-poster/");
 ---
 
 <!doctype html>
@@ -120,7 +121,9 @@ const imagePath = withBase("portfolio/yureimoji-contest/poster.png");
 
       <section class="contest-layout" aria-label="幽霊文字アイデアコンテスト告知">
         <article class="poster-card">
-          <img src={imagePath} alt="幽霊文字アイデアコンテストのポスター" />
+          <a href={posterPagePath} aria-label="ポスター単体ページを開く">
+            <img src={imagePath} alt="幽霊文字アイデアコンテストのポスター" />
+          </a>
         </article>
 
         <aside class="contest-note">
