@@ -1,0 +1,1176 @@
+---
+import "../../styles/global.css";
+import { eveningJihouCities } from "../../data/eveningJihouCities";
+import { japanMapViewBox, japanPrefecturePaths } from "../../data/japanPrefectureMap";
+
+const withBase = (path) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}${path}`;
+
+const initialCity = eveningJihouCities[0];
+const regions = [...new Set(eveningJihouCities.map((city) => city.region))];
+const prefectureMap = new Map(japanPrefecturePaths.map((item) => [item.prefecture, item]));
+const primaryCities = japanPrefecturePaths
+  .map((prefecture) => {
+    const city = eveningJihouCities.find((item) => item.prefecture === prefecture.prefecture);
+    if (!city) {
+      return null;
+    }
+
+    return {
+      ...city,
+      shape: prefecture,
+    };
+  })
+  .filter((item): item is NonNullable<typeof item> => item !== null);
+const pinOffsets = [
+  { x: 0, y: 0 },
+  { x: 18, y: -14 },
+  { x: -18, y: 14 },
+  { x: 22, y: 16 },
+  { x: -22, y: -18 },
+  { x: 30, y: 0 },
+];
+const cityPins = eveningJihouCities.map((city) => {
+  const siblings = eveningJihouCities.filter((item) => item.prefecture === city.prefecture);
+  const index = siblings.findIndex((item) => item.id === city.id);
+  const prefectureShape = prefectureMap.get(city.prefecture);
+  const offset = pinOffsets[index] ?? { x: (index % 3) * 12 - 12, y: Math.floor(index / 3) * 14 - 14 };
+  return {
+    ...city,
+    mapX: (prefectureShape?.center.x ?? 0) + offset.x,
+    mapY: (prefectureShape?.center.y ?? 0) + offset.y,
+  };
+});
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="日本地図から選んで、全国47都道府県を1市ずつカバーした夕方時報チャイムのYouTube記録動画を再生できるページです。"
+    />
+    <title>時報マップ | tfuna</title>
+  </head>
+  <body>
+    <main class="site-shell page-shell jihou-page">
+      <a class="back-link" href={withBase("portfolio/")}>Portfolio</a>
+
+      <section class="jihou-hero" aria-labelledby="jihou-title">
+        <div class="jihou-copy">
+          <p class="eyebrow">Evening Chime Atlas</p>
+          <h1 id="jihou-title">夕方の時報だけを集めた<br />全国チャイム地図</h1>
+          <p class="summary">
+            2026年8月18日時点で YouTube 上に公開されている記録動画から、
+            全国47都道府県をまずは1市ずつカバーする形で夕方チャイムを集めました。
+            いまは全国の入口を作る段階として、あとから市数を増やしやすい構造にしています。
+          </p>
+          <div class="jihou-stats" aria-label="収集状況">
+            <div class="jihou-stat">
+              <strong>{eveningJihouCities.length}</strong>
+              <span>cities</span>
+            </div>
+            <div class="jihou-stat">
+              <strong>47</strong>
+              <span>prefectures covered</span>
+            </div>
+            <div class="jihou-stat">
+              <strong>Evening Only</strong>
+              <span>17:00-18:00 centered</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="jihou-aside">
+          <p>今回の収集方針</p>
+          <ul>
+            <li>夕方に流れる時報・帰宅放送のみを対象にする</li>
+            <li>まずは各都道府県から1市ずつ選んで全国を埋める</li>
+            <li>動画が埋め込み不可でも YouTube 直リンクで辿れるようにする</li>
+            <li>将来的に複数市・季節差・旧音源差分を追加できる形にする</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="jihou-layout" aria-label="時報マップと一覧">
+        <div class="map-panel">
+          <div class="map-header">
+            <div>
+              <p class="eyebrow">Interactive Map</p>
+              <h2>全国から選ぶ</h2>
+            </div>
+            <p class="map-help">都道府県の形そのものか、右の市一覧を押すと、再生動画と説明が切り替わります。</p>
+          </div>
+
+          <div class="map-stage">
+            <div class="map-toolbar" aria-label="地図操作">
+              <button class="map-tool-button" type="button" data-map-zoom-in aria-label="拡大">+</button>
+              <button class="map-tool-button" type="button" data-map-zoom-out aria-label="縮小">-</button>
+              <button class="map-tool-button" type="button" data-map-reset aria-label="地図をリセット">Reset</button>
+            </div>
+
+            <div class="map-gesture-note">ドラッグで移動・ホイール/ピンチで拡大</div>
+
+            <div class="map-viewport" data-map-viewport>
+              <svg
+                class="japan-shape"
+                viewBox={`0 0 ${japanMapViewBox.width} ${japanMapViewBox.height}`}
+                aria-label="都道府県境つきの日本地図"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <g class="prefecture-layer">
+                  {
+                    primaryCities.map((prefectureCity, index) => (
+                      <g
+                        class={`prefecture-button${index === 0 ? " is-active" : ""}`}
+                        tabindex="0"
+                        role="button"
+                        data-city-id={prefectureCity.id}
+                        data-city={prefectureCity.city}
+                        data-prefecture={prefectureCity.prefecture}
+                        data-region={prefectureCity.region}
+                        data-time={prefectureCity.time}
+                        data-tune={prefectureCity.tune}
+                        data-note={prefectureCity.note}
+                        data-youtube-id={prefectureCity.youtubeId}
+                        data-source-url={prefectureCity.sourceUrl}
+                        data-map-left={(prefectureCity.shape.center.x / japanMapViewBox.width) * 100}
+                        data-map-top={(prefectureCity.shape.center.y / japanMapViewBox.height) * 100}
+                        aria-pressed={index === 0 ? "true" : "false"}
+                        aria-label={`${prefectureCity.prefecture}を選択`}
+                      >
+                        {prefectureCity.shape.paths.map((path) => (
+                          <path
+                            d={path}
+                            class={`prefecture-shape region-${prefectureCity.shape.region}`}
+                            data-prefecture-shape={prefectureCity.prefecture}
+                          />
+                        ))}
+                      </g>
+                    ))
+                  }
+                </g>
+              </svg>
+
+              <div class="map-pins" aria-label="収集済みの市ピン">
+                {
+                  cityPins.map((city, index) => (
+                    <button
+                      class={`map-pin${city.id === initialCity.id ? " is-active" : ""}`}
+                      type="button"
+                      data-city-id={city.id}
+                      data-city={city.city}
+                      data-prefecture={city.prefecture}
+                      data-region={city.region}
+                      data-time={city.time}
+                      data-tune={city.tune}
+                      data-note={city.note}
+                      data-youtube-id={city.youtubeId}
+                      data-source-url={city.sourceUrl}
+                      data-map-x={city.mapX}
+                      data-map-y={city.mapY}
+                      data-map-left={(city.mapX / japanMapViewBox.width) * 100}
+                      data-map-top={(city.mapY / japanMapViewBox.height) * 100}
+                      style={`left:${(city.mapX / japanMapViewBox.width) * 100}%;top:${(city.mapY / japanMapViewBox.height) * 100}%;`}
+                      aria-pressed={city.id === initialCity.id ? "true" : "false"}
+                      title={`${city.prefecture} ${city.city}`}
+                    >
+                      <span>{city.city}</span>
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="coverage-note">
+            <p>
+              地図は位置関係をつかむための概略表現です。記録動画には旧音源や運用変更前のものが含まれる場合があります。
+            </p>
+          </div>
+        </div>
+
+        <aside class="player-panel" aria-live="polite">
+          <div class="player-heading">
+            <div>
+              <p class="eyebrow" id="city-region">{initialCity.region}</p>
+              <h2 id="city-name">{initialCity.city}</h2>
+              <p class="player-subline">
+                <span id="city-prefecture">{initialCity.prefecture}</span>
+                <span class="dot"></span>
+                <span id="city-time">{initialCity.time}</span>
+              </p>
+            </div>
+            <span class="collection-badge">全国47件</span>
+          </div>
+
+          <div class="video-frame">
+            <iframe
+              id="city-video"
+              title={`${initialCity.city}の夕方時報チャイム`}
+              src={`https://www.youtube-nocookie.com/embed/${initialCity.youtubeId}`}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+
+          <div class="player-copy">
+            <p class="player-label">チャイム</p>
+            <h3 id="city-tune">{initialCity.tune}</h3>
+            <p id="city-note">{initialCity.note}</p>
+          </div>
+
+          <div class="player-actions">
+            <a id="city-source-link" href={initialCity.sourceUrl} target="_blank" rel="noreferrer">
+              YouTubeで開く
+            </a>
+            <a href="https://www.youtube.com/results?search_query=%E9%98%B2%E7%81%BD%E8%A1%8C%E6%94%BF%E7%84%A1%E7%B7%9A+%E5%A4%95%E7%84%BC%E3%81%91%E5%B0%8F%E7%84%BC%E3%81%91+%E5%B8%82" target="_blank" rel="noreferrer">
+              追加動画を探す
+            </a>
+          </div>
+
+          <div class="city-index">
+            <div class="city-index-header">
+              <p class="eyebrow">City Index</p>
+              <h3>収集済みの市</h3>
+            </div>
+
+            <div class="region-chips" aria-label="地域一覧">
+              {
+                regions.map((region, index) => (
+                  <button
+                    class={`region-chip${index === 0 ? " is-current" : ""}`}
+                    type="button"
+                    data-region-chip={region}
+                  >
+                    {region}
+                  </button>
+                ))
+              }
+            </div>
+
+            <div class="city-list-wrap">
+              {
+                regions.map((region, index) => (
+                  <section
+                    class={`city-group${index === 0 ? " is-visible" : ""}`}
+                    data-region-group={region}
+                    aria-label={`${region}の市一覧`}
+                  >
+                    {eveningJihouCities
+                      .filter((city) => city.region === region)
+                      .map((city) => (
+                        <button
+                          class={`city-list-item${city.id === initialCity.id ? " is-active" : ""}`}
+                          type="button"
+                          data-city-id={city.id}
+                          data-city={city.city}
+                          data-prefecture={city.prefecture}
+                          data-region={city.region}
+                          data-time={city.time}
+                          data-tune={city.tune}
+                          data-note={city.note}
+                          data-youtube-id={city.youtubeId}
+                          data-source-url={city.sourceUrl}
+                          data-map-x={cityPins.find((item) => item.id === city.id)?.mapX ?? 0}
+                          data-map-y={cityPins.find((item) => item.id === city.id)?.mapY ?? 0}
+                          data-map-left={((cityPins.find((item) => item.id === city.id)?.mapX ?? 0) / japanMapViewBox.width) * 100}
+                          data-map-top={((cityPins.find((item) => item.id === city.id)?.mapY ?? 0) / japanMapViewBox.height) * 100}
+                          aria-pressed={city.id === initialCity.id ? "true" : "false"}
+                        >
+                          <span class="city-list-name">{city.city}</span>
+                          <span class="city-list-meta">
+                            {city.prefecture} / {city.time}
+                          </span>
+                        </button>
+                      ))}
+                  </section>
+                ))
+              }
+            </div>
+          </div>
+
+          <p class="embed-note">
+            一部の動画は埋め込み制限で再生できない場合があります。その場合は「YouTubeで開く」から視聴できます。
+          </p>
+        </aside>
+      </section>
+    </main>
+
+    <script is:inline>
+      const cityControls = Array.from(document.querySelectorAll("[data-city-id]"));
+      const mapPins = Array.from(document.querySelectorAll(".map-pin"));
+      const prefectureButtons = Array.from(document.querySelectorAll(".prefecture-button"));
+      const listItems = Array.from(document.querySelectorAll(".city-list-item"));
+      const regionChips = Array.from(document.querySelectorAll("[data-region-chip]"));
+      const regionGroups = Array.from(document.querySelectorAll("[data-region-group]"));
+      const mapStage = document.querySelector(".map-stage");
+      const mapViewport = document.querySelector("[data-map-viewport]");
+      const japanShape = document.querySelector(".japan-shape");
+      const zoomInButton = document.querySelector("[data-map-zoom-in]");
+      const zoomOutButton = document.querySelector("[data-map-zoom-out]");
+      const resetMapButton = document.querySelector("[data-map-reset]");
+
+      const cityName = document.querySelector("#city-name");
+      const cityRegion = document.querySelector("#city-region");
+      const cityPrefecture = document.querySelector("#city-prefecture");
+      const cityTime = document.querySelector("#city-time");
+      const cityTune = document.querySelector("#city-tune");
+      const cityNote = document.querySelector("#city-note");
+      const cityVideo = document.querySelector("#city-video");
+      const citySourceLink = document.querySelector("#city-source-link");
+
+      const setActiveRegion = (region) => {
+        regionChips.forEach((chip) => {
+          chip.classList.toggle("is-current", chip.dataset.regionChip === region);
+        });
+
+        regionGroups.forEach((group) => {
+          group.classList.toggle("is-visible", group.dataset.regionGroup === region);
+        });
+      };
+
+      const baseMapWidth = 1000;
+      const baseMapHeight = 900;
+      let currentScale = 1;
+      let viewX = 0;
+      let viewY = 0;
+      let viewWidth = baseMapWidth;
+      let viewHeight = baseMapHeight;
+      let isDragging = false;
+      let dragMoved = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let dragOriginViewX = 0;
+      let dragOriginViewY = 0;
+      let pinchDistance = 0;
+      let pinchScaleStart = 1;
+      let pinchCenterX = 0;
+      let pinchCenterY = 0;
+      let transformFrame = 0;
+
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      const clampViewBox = () => {
+        const maxViewX = baseMapWidth - viewWidth;
+        const maxViewY = baseMapHeight - viewHeight;
+        viewX = clamp(viewX, 0, Math.max(0, maxViewX));
+        viewY = clamp(viewY, 0, Math.max(0, maxViewY));
+      };
+
+      const renderPins = () => {
+        mapPins.forEach((pin) => {
+          const mapX = Number(pin.dataset.mapX ?? "0");
+          const mapY = Number(pin.dataset.mapY ?? "0");
+          const relativeX = (mapX - viewX) / viewWidth;
+          const relativeY = (mapY - viewY) / viewHeight;
+          const visible = relativeX >= -0.06 && relativeX <= 1.06 && relativeY >= -0.06 && relativeY <= 1.06;
+
+          pin.style.display = visible ? "block" : "none";
+          if (visible) {
+            pin.style.left = `${relativeX * 100}%`;
+            pin.style.top = `${relativeY * 100}%`;
+          }
+        });
+      };
+
+      const renderMapTransform = () => {
+        if (!mapStage || !japanShape) {
+          return;
+        }
+
+        clampViewBox();
+        japanShape.setAttribute("viewBox", `${viewX.toFixed(2)} ${viewY.toFixed(2)} ${viewWidth.toFixed(2)} ${viewHeight.toFixed(2)}`);
+        mapStage.dataset.zoomState = currentScale > 1.8 ? "detail" : currentScale > 1.05 ? "zoomed" : "base";
+        mapStage.style.setProperty("--map-pin-scale", `${Math.max(0.58, 1 / Math.pow(currentScale, 0.82))}`);
+        renderPins();
+        transformFrame = 0;
+      };
+
+      const applyMapTransform = () => {
+        if (transformFrame) {
+          return;
+        }
+
+        transformFrame = window.requestAnimationFrame(renderMapTransform);
+      };
+
+      const zoomAtPoint = (nextScale, clientX, clientY) => {
+        if (!mapStage) {
+          return;
+        }
+
+        const bounds = mapStage.getBoundingClientRect();
+        const clampedScale = clamp(nextScale, 1, 20);
+        const relativeX = clamp((clientX - bounds.left) / bounds.width, 0, 1);
+        const relativeY = clamp((clientY - bounds.top) / bounds.height, 0, 1);
+        const anchorMapX = viewX + viewWidth * relativeX;
+        const anchorMapY = viewY + viewHeight * relativeY;
+
+        currentScale = clampedScale;
+        viewWidth = baseMapWidth / currentScale;
+        viewHeight = baseMapHeight / currentScale;
+        viewX = anchorMapX - viewWidth * relativeX;
+        viewY = anchorMapY - viewHeight * relativeY;
+        applyMapTransform();
+      };
+
+      const resetMapView = () => {
+        currentScale = 1;
+        viewX = 0;
+        viewY = 0;
+        viewWidth = baseMapWidth;
+        viewHeight = baseMapHeight;
+        applyMapTransform();
+      };
+
+      const updateCity = (source) => {
+        const selectedId = source.dataset.cityId ?? "";
+        const selectedPrefecture = source.dataset.prefecture ?? "";
+
+        cityControls.forEach((control) => {
+          const active = control.dataset.cityId === selectedId;
+          control.classList.toggle("is-active", active);
+          control.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+
+        prefectureButtons.forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.prefecture === selectedPrefecture);
+        });
+
+        cityName.textContent = source.dataset.city ?? "";
+        cityRegion.textContent = source.dataset.region ?? "";
+        cityPrefecture.textContent = source.dataset.prefecture ?? "";
+        cityTime.textContent = source.dataset.time ?? "";
+        cityTune.textContent = source.dataset.tune ?? "";
+        cityNote.textContent = source.dataset.note ?? "";
+        cityVideo.src = `https://www.youtube-nocookie.com/embed/${source.dataset.youtubeId ?? ""}`;
+        cityVideo.title = `${source.dataset.city ?? ""}の夕方時報チャイム`;
+        citySourceLink.href = source.dataset.sourceUrl ?? "#";
+        setActiveRegion(source.dataset.region ?? "");
+      };
+
+      [...prefectureButtons, ...mapPins, ...listItems].forEach((control) => {
+        control.addEventListener("click", () => updateCity(control));
+        control.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            updateCity(control);
+          }
+        });
+      });
+
+      regionChips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const region = chip.dataset.regionChip ?? "";
+          setActiveRegion(region);
+        });
+      });
+
+      if (mapStage && mapViewport && japanShape) {
+        mapStage.addEventListener(
+          "wheel",
+          (event) => {
+            event.preventDefault();
+            const nextScale = currentScale * (event.deltaY < 0 ? 1.18 : 0.84);
+            zoomAtPoint(nextScale, event.clientX, event.clientY);
+          },
+          { passive: false }
+        );
+
+        mapStage.addEventListener("pointerdown", (event) => {
+          if (event.pointerType === "mouse" && event.button !== 0) {
+            return;
+          }
+
+          isDragging = true;
+          dragMoved = false;
+          dragStartX = event.clientX;
+          dragStartY = event.clientY;
+          dragOriginViewX = viewX;
+          dragOriginViewY = viewY;
+          mapStage.setPointerCapture(event.pointerId);
+          mapStage.classList.add("is-dragging");
+        });
+
+        mapStage.addEventListener("pointermove", (event) => {
+          if (!isDragging || currentScale <= 1) {
+            return;
+          }
+
+          const bounds = mapStage.getBoundingClientRect();
+          const deltaX = event.clientX - dragStartX;
+          const deltaY = event.clientY - dragStartY;
+          dragMoved = dragMoved || Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4;
+          viewX = dragOriginViewX - (deltaX / bounds.width) * viewWidth;
+          viewY = dragOriginViewY - (deltaY / bounds.height) * viewHeight;
+          applyMapTransform();
+        });
+
+        const finishDrag = (event) => {
+          if (!isDragging) {
+            return;
+          }
+
+          isDragging = false;
+          if (mapStage.hasPointerCapture(event.pointerId)) {
+            mapStage.releasePointerCapture(event.pointerId);
+          }
+          mapStage.classList.remove("is-dragging");
+        };
+
+        mapStage.addEventListener("pointerup", finishDrag);
+        mapStage.addEventListener("pointercancel", finishDrag);
+        mapStage.addEventListener("pointerleave", (event) => {
+          if (event.pointerType !== "mouse") {
+            finishDrag(event);
+          }
+        });
+
+        let tapBlockUntil = 0;
+        mapStage.addEventListener(
+          "click",
+          (event) => {
+            if (dragMoved) {
+              event.preventDefault();
+              event.stopPropagation();
+              tapBlockUntil = Date.now() + 80;
+              dragMoved = false;
+            }
+          },
+          true
+        );
+
+        prefectureButtons.forEach((button) => {
+          button.addEventListener(
+            "click",
+            (event) => {
+              if (Date.now() < tapBlockUntil) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            },
+            true
+          );
+        });
+
+        mapStage.addEventListener("touchstart", (event) => {
+          if (event.touches.length !== 2) {
+            return;
+          }
+
+          const [firstTouch, secondTouch] = event.touches;
+          pinchDistance = Math.hypot(
+            secondTouch.clientX - firstTouch.clientX,
+            secondTouch.clientY - firstTouch.clientY
+          );
+          pinchScaleStart = currentScale;
+          pinchCenterX = (firstTouch.clientX + secondTouch.clientX) / 2;
+          pinchCenterY = (firstTouch.clientY + secondTouch.clientY) / 2;
+        });
+
+        mapStage.addEventListener(
+          "touchmove",
+          (event) => {
+            if (event.touches.length !== 2 || !pinchDistance) {
+              return;
+            }
+
+            event.preventDefault();
+            const [firstTouch, secondTouch] = event.touches;
+            const nextDistance = Math.hypot(
+              secondTouch.clientX - firstTouch.clientX,
+              secondTouch.clientY - firstTouch.clientY
+            );
+            zoomAtPoint((nextDistance / pinchDistance) * pinchScaleStart, pinchCenterX, pinchCenterY);
+          },
+          { passive: false }
+        );
+
+        const resetPinch = () => {
+          pinchDistance = 0;
+        };
+
+        mapStage.addEventListener("touchend", resetPinch);
+        mapStage.addEventListener("touchcancel", resetPinch);
+
+        zoomInButton?.addEventListener("click", () => {
+          const bounds = mapStage.getBoundingClientRect();
+          zoomAtPoint(currentScale * 1.2, bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+        });
+
+        zoomOutButton?.addEventListener("click", () => {
+          const bounds = mapStage.getBoundingClientRect();
+          zoomAtPoint(currentScale / 1.2, bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+        });
+
+        resetMapButton?.addEventListener("click", () => resetMapView());
+        window.addEventListener("resize", applyMapTransform);
+        applyMapTransform();
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  .jihou-page {
+    --sound-ink: #172126;
+    --sound-muted: #5d6870;
+    --sound-line: rgba(23, 33, 38, 0.14);
+    --sound-panel: rgba(255, 252, 245, 0.78);
+    --sound-strong: #9a3f27;
+    --sound-accent: #0b6e69;
+  }
+
+  .jihou-page h1,
+  .jihou-page h2,
+  .jihou-page h3 {
+    font-family: Georgia, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  }
+
+  .jihou-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+    gap: 22px;
+    margin-bottom: 34px;
+  }
+
+  .jihou-copy,
+  .jihou-aside,
+  .map-panel,
+  .player-panel {
+    border: 1px solid var(--sound-line);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(248, 243, 232, 0.72)),
+      var(--sound-panel);
+    box-shadow: 0 18px 48px rgba(23, 33, 38, 0.08);
+    backdrop-filter: blur(14px);
+  }
+
+  .jihou-copy,
+  .jihou-aside,
+  .map-panel,
+  .player-panel {
+    padding: 24px;
+  }
+
+  .jihou-copy h1 {
+    margin-bottom: 18px;
+    font-size: clamp(2.8rem, 8vw, 5.5rem);
+    line-height: 0.96;
+  }
+
+  .jihou-copy .summary {
+    max-width: 62ch;
+  }
+
+  .jihou-aside p {
+    margin-bottom: 16px;
+    color: var(--sound-strong);
+    font-weight: 800;
+  }
+
+  .jihou-aside ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--sound-muted);
+    line-height: 1.8;
+  }
+
+  .jihou-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  .jihou-stat {
+    border: 1px solid var(--sound-line);
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.52);
+  }
+
+  .jihou-stat strong,
+  .jihou-stat span {
+    display: block;
+  }
+
+  .jihou-stat strong {
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+  }
+
+  .jihou-stat span {
+    color: var(--sound-muted);
+    font-size: 0.84rem;
+    text-transform: lowercase;
+  }
+
+  .jihou-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(380px, 0.98fr);
+    gap: 22px;
+    align-items: start;
+  }
+
+  .map-header,
+  .player-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .map-help {
+    max-width: 19ch;
+    margin-bottom: 0;
+    color: var(--sound-muted);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+
+  .map-stage {
+    --map-pin-scale: 1;
+    position: relative;
+    margin-top: 24px;
+    border: 1px solid var(--sound-line);
+    aspect-ratio: 1000 / 846;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(11, 110, 105, 0.18), transparent 22%),
+      radial-gradient(circle at 80% 15%, rgba(242, 198, 109, 0.28), transparent 20%),
+      linear-gradient(180deg, rgba(218, 240, 240, 0.86), rgba(236, 244, 250, 0.96));
+    touch-action: none;
+    contain: layout paint;
+  }
+
+  .map-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+      linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.42;
+  }
+
+  .map-toolbar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 4;
+    display: flex;
+    gap: 8px;
+  }
+
+  .map-tool-button {
+    border: 1px solid rgba(23, 33, 38, 0.18);
+    min-width: 42px;
+    padding: 9px 10px;
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--sound-ink);
+    font-size: 0.86rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .map-tool-button:hover {
+    border-color: var(--sound-accent);
+    color: var(--sound-accent);
+  }
+
+  .map-gesture-note {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    z-index: 4;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.84);
+    color: var(--sound-muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .map-viewport,
+  .japan-shape,
+  .map-pins {
+    position: absolute;
+    inset: 0;
+  }
+
+  .map-viewport {
+    isolation: isolate;
+  }
+
+  .japan-shape {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .map-pins {
+    z-index: 2;
+  }
+
+  .map-stage.is-dragging .map-pins,
+  .map-stage.is-dragging .prefecture-layer {
+    pointer-events: none;
+  }
+
+  .prefecture-button {
+    cursor: pointer;
+    outline: none;
+    pointer-events: visiblePainted;
+  }
+
+  .prefecture-shape {
+    fill: rgba(255, 249, 238, 0.96);
+    stroke: rgba(23, 33, 38, 0.64);
+    stroke-width: 1.45;
+    vector-effect: non-scaling-stroke;
+    pointer-events: auto;
+  }
+
+  .region-北海道 {
+    fill: rgba(239, 229, 206, 0.95);
+  }
+
+  .region-東北 {
+    fill: rgba(218, 233, 225, 0.95);
+  }
+
+  .region-関東 {
+    fill: rgba(221, 229, 242, 0.95);
+  }
+
+  .region-中部 {
+    fill: rgba(237, 223, 210, 0.95);
+  }
+
+  .region-近畿 {
+    fill: rgba(233, 220, 233, 0.95);
+  }
+
+  .region-中国 {
+    fill: rgba(227, 235, 212, 0.95);
+  }
+
+  .region-四国 {
+    fill: rgba(244, 229, 206, 0.95);
+  }
+
+  .region-九州 {
+    fill: rgba(221, 238, 234, 0.95);
+  }
+
+  .region-沖縄 {
+    fill: rgba(244, 221, 214, 0.95);
+  }
+
+  .prefecture-button:hover .prefecture-shape,
+  .prefecture-button:focus-visible .prefecture-shape,
+  .prefecture-button.is-active .prefecture-shape {
+    stroke: rgba(11, 110, 105, 0.92);
+    stroke-width: 2.2;
+  }
+
+  .map-stage[data-zoom-state="detail"] .prefecture-button.is-active .prefecture-shape {
+    stroke: rgba(154, 63, 39, 0.98);
+    stroke-width: 3.1;
+  }
+
+  .map-pin {
+    position: absolute;
+    z-index: 2;
+    width: 8px;
+    height: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0;
+    transform: translate(-50%, -50%) scale(var(--map-pin-scale));
+    background: rgba(154, 63, 39, 0.82);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+    cursor: pointer;
+  }
+
+  .map-pin span {
+    position: absolute;
+    left: calc(100% + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    white-space: nowrap;
+    border: 1px solid var(--sound-line);
+    padding: 3px 5px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--sound-ink);
+    font-size: 0.58rem;
+    font-weight: 700;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .map-pin:hover span,
+  .map-pin:focus-visible span,
+  .map-pin.is-active span {
+    opacity: 1;
+  }
+
+  .map-pin.is-active {
+    background: var(--sound-accent);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.96),
+      0 0 0 5px rgba(11, 110, 105, 0.16);
+  }
+
+  .map-stage[data-zoom-state="detail"] .map-pin {
+    width: 7px;
+    height: 7px;
+  }
+
+  .map-stage[data-zoom-state="detail"] .map-pin.is-active span {
+    font-size: 0.56rem;
+  }
+
+  .coverage-note {
+    margin-top: 16px;
+    color: var(--sound-muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .player-subline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    color: var(--sound-muted);
+    font-size: 0.96rem;
+  }
+
+  .collection-badge {
+    display: inline-flex;
+    border: 1px solid var(--sound-line);
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.62);
+    color: var(--sound-strong);
+    font-size: 0.84rem;
+    font-weight: 800;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--sound-strong);
+  }
+
+  .video-frame {
+    margin: 22px 0 20px;
+    border: 1px solid var(--sound-line);
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .video-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .player-copy {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--sound-line);
+  }
+
+  .player-label {
+    margin-bottom: 10px;
+    color: var(--sound-strong);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .player-copy p:last-child {
+    margin-bottom: 0;
+    color: var(--sound-muted);
+    line-height: 1.8;
+  }
+
+  .player-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .player-actions a {
+    border: 1px solid var(--sound-line);
+    padding: 11px 14px;
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--sound-ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .player-actions a:hover {
+    border-color: var(--sound-accent);
+    color: var(--sound-accent);
+  }
+
+  .city-index {
+    margin-top: 22px;
+    border-top: 1px solid var(--sound-line);
+    padding-top: 20px;
+  }
+
+  .city-index-header {
+    margin-bottom: 14px;
+  }
+
+  .city-index-header h3 {
+    margin-bottom: 0;
+  }
+
+  .region-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .region-chip {
+    border: 1px solid var(--sound-line);
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.62);
+    color: var(--sound-muted);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .region-chip.is-current {
+    border-color: var(--sound-accent);
+    background: rgba(11, 110, 105, 0.1);
+    color: var(--sound-accent);
+  }
+
+  .city-list-wrap {
+    border: 1px solid var(--sound-line);
+    background: rgba(255, 255, 255, 0.52);
+    max-height: 360px;
+    overflow: auto;
+  }
+
+  .city-group {
+    display: none;
+  }
+
+  .city-group.is-visible {
+    display: block;
+  }
+
+  .city-list-item {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    border: 0;
+    border-bottom: 1px solid var(--sound-line);
+    padding: 14px 16px;
+    background: transparent;
+    color: var(--sound-ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .city-list-item:last-child {
+    border-bottom: 0;
+  }
+
+  .city-list-item.is-active {
+    background: rgba(11, 110, 105, 0.08);
+  }
+
+  .city-list-name,
+  .city-list-meta {
+    display: block;
+  }
+
+  .city-list-name {
+    font-weight: 800;
+  }
+
+  .city-list-meta {
+    color: var(--sound-muted);
+    font-size: 0.86rem;
+  }
+
+  .embed-note {
+    margin-top: 16px;
+    color: var(--sound-muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 1080px) {
+    .jihou-hero,
+    .jihou-layout {
+      grid-template-columns: 1fr;
+    }
+
+  }
+
+  @media (max-width: 720px) {
+    .jihou-copy,
+    .jihou-aside,
+    .map-panel,
+    .player-panel {
+      padding: 18px;
+    }
+
+    .jihou-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .map-header,
+    .player-heading {
+      display: block;
+    }
+
+    .map-help {
+      max-width: none;
+      margin-top: 12px;
+    }
+
+    .city-list-item {
+      display: block;
+    }
+
+    .city-list-meta {
+      margin-top: 6px;
+    }
+
+    .map-toolbar {
+      top: 10px;
+      right: 10px;
+      gap: 6px;
+    }
+
+    .map-tool-button {
+      min-width: 38px;
+      padding: 8px 9px;
+    }
+
+    .map-gesture-note {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      font-size: 0.72rem;
+    }
+  }
+</style>

@@ -1,0 +1,53 @@
+---
+import "../styles/global.css";
+
+const withBase = (path) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}${path}`;
+
+const notes = [
+  {
+    date: "2026-06",
+    title: "静的サイト運用メモ",
+    body: "AstroとCloudflare Pagesなら、サーバー代をかけずに個人サイトを運用できる。"
+  },
+  {
+    date: "2026-06",
+    title: "公開情報の方針",
+    body: "実名、メール、作業ディレクトリなど、公開してよい情報だけをページに置く。"
+  },
+  {
+    date: "Next",
+    title: "追加したいもの",
+    body: "プロフィール、制作物、読書メモ、活動ログを少しずつページ化する。"
+  }
+];
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="tfunaのメモと更新履歴をまとめるページです。" />
+    <title>Notes | tfuna</title>
+  </head>
+  <body>
+    <main class="site-shell page-shell">
+      <a class="back-link" href={withBase("")}>Home</a>
+      <header class="page-header">
+        <p class="eyebrow">Notes</p>
+        <h1>メモ</h1>
+        <p class="summary">考えたこと、作業ログ、あとで見返したいことを置いていきます。</p>
+      </header>
+
+      <section class="note-cards" aria-label="メモ一覧">
+        {notes.map((note) => (
+          <article class="note-card">
+            <time>{note.date}</time>
+            <h2>{note.title}</h2>
+            <p>{note.body}</p>
+          </article>
+        ))}
+      </section>
+    </main>
+  </body>
+</html>

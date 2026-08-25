@@ -1,0 +1,153 @@
+---
+import "../styles/global.css";
+
+const withBase = (path) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}${path}`;
+
+const profile = {
+  name: "tfuna",
+  role: "個人情報と活動のハブ",
+  location: "Japan",
+  summary:
+    "プロフィール、作ったもの、考えていること、SNSや連絡先をまとめて置くための静的サイトです。",
+  status: "更新中",
+};
+
+const links = [
+  { label: "GitHub", href: "https://github.com/" },
+  { label: "X / Twitter", href: "https://x.com/" },
+  { label: "Portfolio", href: withBase("portfolio/") },
+  { label: "Notes", href: withBase("notes/") },
+  { label: "時報マップ", href: withBase("portfolio/jihou-map/") },
+];
+
+const facts = [
+  ["拠点", profile.location],
+  ["関心", "Web / AI / ものづくり"],
+  ["得意", "小さく作って育てること"],
+];
+
+const projects = [
+  {
+    title: "Jihou Map",
+    tag: "Prototype",
+    href: withBase("portfolio/jihou-map/"),
+    description: "日本地図から市を選び、各地の時報チャイム動画を再生するサウンドマップ。"
+  },
+  {
+    title: "Portfolio",
+    tag: "Work",
+    href: withBase("portfolio/"),
+    description: "制作物、実験、公開できる成果物を並べるページ。",
+  },
+  {
+    title: "Notes",
+    tag: "Writing",
+    href: withBase("notes/"),
+    description: "考えたこと、読んだもの、作業ログを残すページ。",
+  },
+  {
+    title: "Contact",
+    tag: "Mail",
+    href: "#",
+    description: "連絡方法や各種リンクは公開方針を決めてから追加します。",
+  },
+];
+
+const notes = [
+  "プロフィール文は短めにして、リンク先で詳しく読める形にする。",
+  "公開したくない個人情報は置かず、連絡先は専用メールにする。",
+  "Cloudflare PagesかGitHub Pagesなら月額0円で運用できる。",
+];
+
+const timeline = [
+  { date: "2026", text: "静的サイトとして公開準備を開始。" },
+  { date: "Next", text: "ブログ、制作物、連絡先を少しずつ追加。" },
+];
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={profile.summary} />
+    <title>{profile.name} | Personal Site</title>
+  </head>
+  <body>
+    <main class="site-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-visual" aria-hidden="true">
+          <div class="portrait">
+            <img src={withBase("profile-mark.svg")} alt="" />
+          </div>
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">{profile.status}</p>
+          <h1 id="page-title">{profile.name}</h1>
+          <p class="role">{profile.role}</p>
+          <p class="summary">{profile.summary}</p>
+          <nav class="link-row" aria-label="主要リンク">
+            {links.map((link) => <a href={link.href}>{link.label}</a>)}
+          </nav>
+        </div>
+      </section>
+
+      <section class="section-grid" aria-label="プロフィール概要">
+        {
+          facts.map(([label, value]) => (
+            <div class="fact">
+              <span>{label}</span>
+              <strong>{value}</strong>
+            </div>
+          ))
+        }
+      </section>
+
+      <section class="content-band" aria-labelledby="projects-title">
+        <div class="section-heading">
+          <p class="eyebrow">Projects</p>
+          <h2 id="projects-title">置いておきたいもの</h2>
+        </div>
+        <div class="cards">
+          {
+            projects.map((project) => (
+              <a class="card card-link" href={project.href}>
+                <span>{project.tag}</span>
+                <h3>{project.title}</h3>
+                <p>{project.description}</p>
+              </a>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="split" aria-label="メモと履歴">
+        <div>
+          <div class="section-heading">
+            <p class="eyebrow">Notes</p>
+            <h2>運用メモ</h2>
+          </div>
+          <ul class="note-list">
+            {notes.map((note) => <li>{note}</li>)}
+          </ul>
+        </div>
+        <div>
+          <div class="section-heading">
+            <p class="eyebrow">Timeline</p>
+            <h2>更新履歴</h2>
+          </div>
+          <ol class="timeline">
+            {
+              timeline.map((item) => (
+                <li>
+                  <time>{item.date}</time>
+                  <p>{item.text}</p>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

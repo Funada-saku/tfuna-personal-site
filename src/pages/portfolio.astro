@@ -1,0 +1,147 @@
+---
+import "../styles/global.css";
+
+const withBase = (path) => `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}${path}`;
+
+const works = [
+  {
+    title: "Jihou Map",
+    type: "Sound Map",
+    description:
+      "日本地図から市を選ぶと、その地域の時報チャイムをYouTubeで再生できるプロトタイプ。地理と音の対応を楽しむアーカイブUI。",
+    status: "MVP",
+    highlights: ["Astro", "YouTube Embed", "地図UI"]
+  },
+  {
+    title: "MyStatus",
+    type: "Web App",
+    description:
+      "日々のタスクや自己管理をRPG風のステータス、クエスト、経験値で楽しく可視化するセルフマネジメントアプリ。",
+    status: "実装済み",
+    highlights: ["HTML/CSS/JavaScript", "localStorage", "スマホ対応"]
+  },
+  {
+    title: "LINE Stamp Tools",
+    type: "Creative Tool",
+    description:
+      "画像加工、文字入れ、生成補助をまとめたLINEスタンプ制作向けの作業環境。",
+    status: "制作中",
+    highlights: ["画像加工", "制作支援", "キャラクター企画"]
+  },
+  {
+    title: "Box Recommender",
+    type: "Prototype",
+    description:
+      "荷物の写真や入力情報から、適した梱包材や箱サイズを提案するレコメンドアプリのモックアップ。",
+    status: "プロトタイプ",
+    highlights: ["Vite", "React", "UIモック"]
+  },
+  {
+    title: "Reading App",
+    type: "Product Design",
+    description:
+      "電子書籍や文章を読みやすい表示へ変換する読書支援アプリ。Webアプリとブラウザ拡張の両面で構想。",
+    status: "設計中",
+    highlights: ["読書支援", "表示変換", "ブラウザ拡張"]
+  },
+  {
+    title: "Consumer Deterioration Monitor",
+    type: "Data Monitor",
+    description:
+      "雇用、移動、消費者心理などの公開データを定期取得し、消費環境の悪化シグナルをレポート化する監視ツール。",
+    status: "運用設計済み",
+    highlights: ["Python", "公開データ", "自動レポート"]
+  },
+  {
+    title: "旅行共有・しおり共有サービス",
+    type: "Service Concept",
+    description:
+      "ログイン不要の共有URLで、旅行記や旅のしおりを共同編集できる軽量な旅行共有サービス構想。",
+    status: "要件定義",
+    highlights: ["URL共有", "共同編集", "旅行メモ"]
+  },
+  {
+    title: "みんなの旅路",
+    type: "Service Concept",
+    description:
+      "誰かの旅程を別の人がたどり、写真や感想を積み重ねていく、旅程を主役にした旅行SNS構想。",
+    status: "要件定義",
+    highlights: ["旅行SNS", "旅程投稿", "Google Maps連携"]
+  },
+  {
+    title: "代理旅行サービス",
+    type: "Service Design",
+    description:
+      "依頼者の代わりに現地へ行き、写真・動画・旅程レポートを届けるサービスの設計。安全管理と規約整備を重視。",
+    status: "事業設計",
+    highlights: ["サービス設計", "リスク管理", "体験設計"]
+  },
+  {
+    title: "Personal Site",
+    type: "Website",
+    description:
+      "自分のプロフィール、制作物、メモを低コストで公開するためのAstro製静的サイト。",
+    status: "公開中",
+    highlights: ["Astro", "Cloudflare Pages", "静的サイト"]
+  },
+  {
+    title: "幽霊文字アイデアコンテスト",
+    type: "Creative Prop",
+    description:
+      "TRPGシナリオ向けに制作した、応募告知風の架空コンテストページ。ポスター画像を中心に、公開用の見せ方を整えた静的ページ。",
+    status: "公開向け",
+    highlights: ["Astro", "架空広告", "TRPG素材"]
+  }
+];
+
+const publishingPolicy =
+  "公開ページとしての見え方を優先し、一般向けに説明しづらい内容、刺激の強い創作本文、誤解を招きやすい企画は掲載対象から外しています。";
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="tfunaの制作物、ツール、サービス構想をまとめるポートフォリオページです。" />
+    <title>Portfolio | tfuna</title>
+  </head>
+  <body>
+    <main class="site-shell page-shell">
+      <a class="back-link" href={withBase("")}>Home</a>
+      <header class="page-header">
+        <p class="eyebrow">Portfolio</p>
+        <h1>作ったもの・考えたもの</h1>
+        <p class="summary">
+          ワークスペース内のプロジェクトから、一般公開しやすいWebアプリ、制作支援ツール、サービス構想をまとめています。
+        </p>
+      </header>
+
+      <section class="cards portfolio-grid" aria-label="制作物一覧">
+        {works.map((work) => (
+          <article class="card portfolio-card">
+            <span>{work.type}</span>
+            <h3>{work.title}</h3>
+            <p>{work.description}</p>
+            <ul class="tag-list" aria-label={`${work.title}の技術や特徴`}>
+              {work.highlights.map((highlight) => <li>{highlight}</li>)}
+            </ul>
+            <strong class="status-label">{work.status}</strong>
+            {work.title === "Jihou Map" && (
+              <p><a href={withBase("portfolio/jihou-map/")}>ページを見る</a></p>
+            )}
+            {work.title === "幽霊文字アイデアコンテスト" && (
+              <p><a href={withBase("portfolio/yureimoji-contest/")}>ページを見る</a></p>
+            )}
+          </article>
+        ))}
+      </section>
+
+      <section class="policy-block" aria-labelledby="policy-title">
+        <p class="eyebrow">Publishing Policy</p>
+        <h2 id="policy-title">掲載方針</h2>
+        <p>{publishingPolicy}</p>
+      </section>
+    </main>
+  </body>
+</html>
